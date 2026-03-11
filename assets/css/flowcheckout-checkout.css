@@ -1,0 +1,1037 @@
+/*
+ * FlowCheckout — Frontend Checkout Styles
+ * Premium two-column checkout design inspired by Shopify/Stripe/Apple.
+ * Uses CSS custom properties for full theme customisation.
+ *
+ * Table of contents:
+ *  1. CSS Variables & Reset
+ *  2. Checkout wrapper & layout
+ *  3. Header & progress bar
+ *  4. Form sections & fields
+ *  5. Express checkout
+ *  6. Order summary (right column)
+ *  7. Coupon
+ *  8. Trust badges
+ *  9. Place order button
+ * 10. WooCommerce overrides
+ * 11. Animations & micro-interactions
+ * 12. Mobile responsive
+ * 13. Hide site chrome
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1. CSS Variables & Reset
+───────────────────────────────────────────────────────────────────────────── */
+.fc-checkout {
+    --fc-accent:        #2563EB;
+    --fc-accent-hover:  #1d4ed8;
+    --fc-brand:         #111827;
+    --fc-btn-radius:    10px;
+    --fc-field-radius:  8px;
+
+    /* Neutral palette */
+    --fc-bg:            #f9fafb;
+    --fc-surface:       #ffffff;
+    --fc-surface-2:     #f3f4f6;
+    --fc-border:        #e5e7eb;
+    --fc-border-focus:  var(--fc-accent);
+
+    /* Text */
+    --fc-text:          #111827;
+    --fc-text-muted:    #6b7280;
+    --fc-text-light:    #9ca3af;
+    --fc-error:         #dc2626;
+    --fc-success:       #16a34a;
+
+    /* Spacing */
+    --fc-section-gap:   28px;
+    --fc-field-gap:     14px;
+    --fc-col-gap:       48px;
+
+    /* Shadows */
+    --fc-shadow-sm:     0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --fc-shadow-md:     0 4px 12px rgba(0,0,0,.08);
+    --fc-shadow-focus:  0 0 0 3px color-mix(in srgb, var(--fc-accent) 20%, transparent);
+
+    /* Transitions */
+    --fc-ease:          cubic-bezier(.4,0,.2,1);
+    --fc-dur:           .18s;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. Checkout wrapper & layout
+───────────────────────────────────────────────────────────────────────────── */
+.fc-checkout {
+    background: var(--fc-bg);
+    min-height: 100vh;
+    font-family: inherit;
+    color: var(--fc-text);
+    -webkit-font-smoothing: antialiased;
+}
+
+.fc-checkout__main {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    column-gap: var(--fc-col-gap);
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    align-items: start;
+}
+
+/* Single-column variant */
+.fc-checkout--single-column .fc-checkout__main {
+    grid-template-columns: 1fr;
+    max-width: 640px;
+}
+.fc-checkout--single-column .fc-checkout__summary-col {
+    order: -1; /* Summary above form on single column */
+    margin-bottom: 32px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. Header & progress bar
+───────────────────────────────────────────────────────────────────────────── */
+.fc-checkout__header {
+    background: var(--fc-surface);
+    border-bottom: 1px solid var(--fc-border);
+}
+
+.fc-checkout__header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px 24px;
+}
+
+.fc-checkout__logo img {
+    max-height: 36px;
+    width: auto;
+    display: block;
+}
+
+.fc-checkout__site-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--fc-brand);
+    text-decoration: none;
+    letter-spacing: -.02em;
+}
+
+.fc-checkout__cart-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .8125rem;
+    color: var(--fc-text-muted);
+    text-decoration: none;
+    transition: color var(--fc-dur) var(--fc-ease);
+}
+.fc-checkout__cart-link:hover { color: var(--fc-accent); }
+
+/* Progress bar */
+.fc-progress {
+    border-top: 1px solid var(--fc-border);
+    padding: 14px 24px;
+}
+
+.fc-progress__inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+.fc-progress__step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.fc-progress__dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--fc-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--fc-text-muted);
+    transition: background var(--fc-dur) var(--fc-ease), color var(--fc-dur) var(--fc-ease);
+}
+
+.fc-progress__step--done .fc-progress__dot {
+    background: var(--fc-accent);
+    color: #fff;
+}
+
+.fc-progress__step--active .fc-progress__dot {
+    background: var(--fc-brand);
+    color: #fff;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--fc-brand) 15%, transparent);
+}
+
+.fc-progress__label {
+    font-size: .75rem;
+    font-weight: 500;
+    color: var(--fc-text-muted);
+}
+
+.fc-progress__step--active .fc-progress__label {
+    color: var(--fc-brand);
+    font-weight: 700;
+}
+
+.fc-progress__step--done .fc-progress__label {
+    color: var(--fc-accent);
+}
+
+.fc-progress__line {
+    flex: 1;
+    height: 2px;
+    background: var(--fc-border);
+    margin: 0 8px;
+    min-width: 24px;
+    transition: background var(--fc-dur) var(--fc-ease);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. Form sections & fields
+───────────────────────────────────────────────────────────────────────────── */
+.fc-checkout__form-col {
+    min-width: 0;
+}
+
+.fc-form__section {
+    background: var(--fc-surface);
+    border: 1px solid var(--fc-border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 16px;
+    transition: box-shadow var(--fc-dur) var(--fc-ease);
+}
+.fc-form__section:hover {
+    box-shadow: var(--fc-shadow-sm);
+}
+
+.fc-form__section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--fc-brand);
+    margin: 0 0 22px;
+    letter-spacing: -.02em;
+}
+
+.fc-form__fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fc-field-gap);
+}
+
+/* Grid layout for address fields */
+.fc-form__fields--grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--fc-field-gap);
+}
+
+/* WooCommerce form-row widths */
+.fc-form__fields .form-row-wide,
+.fc-form__fields--grid .form-row-wide {
+    grid-column: 1 / -1;
+}
+
+.fc-form__fields .form-row-first {
+    grid-column: 1;
+}
+
+.fc-form__fields .form-row-last {
+    grid-column: 2;
+}
+
+/* ── WooCommerce field wrapper ── */
+.fc-form .form-row,
+.woocommerce-checkout .form-row {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ── Labels ── */
+.fc-form .form-row label,
+.woocommerce-checkout .form-row label,
+.fc-form .form-row > label {
+    display: block;
+    font-size: .8125rem;
+    font-weight: 600;
+    color: var(--fc-text);
+    margin-bottom: 6px;
+    letter-spacing: -.01em;
+}
+
+.fc-form .required,
+.woocommerce-checkout .required {
+    color: var(--fc-error);
+    margin-left: 2px;
+}
+
+/* ── Input fields ── */
+.fc-form .input-text,
+.fc-form input[type="text"],
+.fc-form input[type="email"],
+.fc-form input[type="tel"],
+.fc-form input[type="password"],
+.fc-form input[type="number"],
+.fc-form select,
+.fc-form textarea,
+.woocommerce-checkout .input-text,
+.woocommerce-checkout input[type="text"],
+.woocommerce-checkout input[type="email"],
+.woocommerce-checkout input[type="tel"],
+.woocommerce-checkout select {
+    width: 100% !important;
+    height: 48px !important;
+    padding: 0 14px !important;
+    font-size: .9375rem !important;
+    color: var(--fc-text) !important;
+    background: var(--fc-surface) !important;
+    border: 1.5px solid var(--fc-border) !important;
+    border-radius: var(--fc-field-radius) !important;
+    outline: none !important;
+    transition: border-color var(--fc-dur) var(--fc-ease),
+                box-shadow var(--fc-dur) var(--fc-ease) !important;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.fc-form .input-text:focus,
+.fc-form input[type="text"]:focus,
+.fc-form input[type="email"]:focus,
+.fc-form input[type="tel"]:focus,
+.fc-form select:focus,
+.woocommerce-checkout .input-text:focus {
+    border-color: var(--fc-border-focus) !important;
+    box-shadow: var(--fc-shadow-focus) !important;
+}
+
+.fc-form .input-text::placeholder { color: var(--fc-text-light); }
+
+/* ── Select arrow ── */
+.fc-form select,
+.woocommerce-checkout select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 16px 16px !important;
+    padding-right: 40px !important;
+}
+
+/* ── Validation states ── */
+.fc-form .woocommerce-invalid .input-text,
+.fc-form .woocommerce-invalid input,
+.fc-form .woocommerce-invalid select {
+    border-color: var(--fc-error) !important;
+    box-shadow: 0 0 0 3px rgba(220,38,38,.1) !important;
+}
+
+.fc-form .woocommerce-invalid-required-field label::after {
+    content: ' — required';
+    font-size: .75rem;
+    font-weight: 400;
+    color: var(--fc-error);
+}
+
+.fc-form .woocommerce-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--fc-field-radius);
+    color: var(--fc-error);
+    padding: 12px 16px;
+    font-size: .875rem;
+    list-style: none;
+    margin: 0 0 16px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. Express checkout
+───────────────────────────────────────────────────────────────────────────── */
+.fc-express-checkout {
+    background: var(--fc-surface);
+    border: 1px solid var(--fc-border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+}
+
+.fc-express-checkout__label {
+    font-size: .8125rem;
+    font-weight: 600;
+    color: var(--fc-text-muted);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin: 0 0 14px;
+}
+
+.fc-express-checkout__buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+    min-height: 48px;
+}
+
+/* Style the payment gateway express buttons */
+.fc-express-checkout__buttons .apple-pay-button,
+.fc-express-checkout__buttons .gpay-button,
+.fc-express-checkout__buttons [class*="stripe-express"],
+.fc-express-checkout__buttons [class*="paypal-button"] {
+    border-radius: var(--fc-btn-radius) !important;
+    height: 48px !important;
+    min-width: 100px;
+}
+
+.fc-express-checkout__divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    color: var(--fc-text-light);
+    font-size: .8125rem;
+}
+
+.fc-express-checkout__divider::before,
+.fc-express-checkout__divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--fc-border);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. Order summary (right column)
+───────────────────────────────────────────────────────────────────────────── */
+.fc-checkout__summary-col {
+    min-width: 0;
+}
+
+.fc-checkout__summary-col--sticky {
+    position: sticky;
+    top: 24px;
+}
+
+.fc-order-summary {
+    background: var(--fc-surface-2);
+    border: 1px solid var(--fc-border);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.fc-order-summary__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--fc-brand);
+    margin: 0 0 20px;
+    letter-spacing: -.02em;
+}
+
+/* Order items */
+.fc-order-summary__items {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-bottom: 1px solid var(--fc-border);
+    margin-bottom: 16px;
+}
+
+.fc-order-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--fc-border);
+}
+.fc-order-item:last-child { border-bottom: none; }
+
+.fc-order-item__thumb {
+    position: relative;
+    flex-shrink: 0;
+    width: 58px;
+    height: 58px;
+}
+
+.fc-order-item__img {
+    width: 58px !important;
+    height: 58px !important;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--fc-border);
+    display: block;
+}
+
+/* Fallback for missing image */
+.fc-order-item__thumb:not(:has(img)),
+.fc-order-item__thumb:has(img[src=""]) {
+    background: var(--fc-surface-2);
+    border-radius: 8px;
+    border: 1px solid var(--fc-border);
+}
+
+.fc-order-item__qty {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: var(--fc-text-muted);
+    color: #fff;
+    font-size: .6875rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.fc-order-item__details {
+    flex: 1;
+    min-width: 0;
+}
+
+.fc-order-item__name {
+    display: block;
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--fc-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fc-order-item__meta {
+    display: block;
+    font-size: .75rem;
+    color: var(--fc-text-muted);
+    margin-top: 2px;
+}
+
+.fc-order-item__price {
+    font-size: .9375rem;
+    font-weight: 700;
+    color: var(--fc-brand);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Totals ── */
+.fc-order-summary__totals {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.fc-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 9px 0;
+    font-size: .875rem;
+    color: var(--fc-text-muted);
+    border-bottom: 1px solid var(--fc-border);
+}
+.fc-total-row:last-child { border-bottom: none; }
+
+.fc-total-row--discount { color: var(--fc-success); }
+.fc-total-row__discount { font-weight: 700; }
+
+.fc-total-row--grand {
+    padding-top: 16px;
+    font-size: 1.0625rem;
+    font-weight: 800;
+    color: var(--fc-brand);
+    border-top: 2px solid var(--fc-border);
+    border-bottom: none;
+}
+
+.fc-grand-total {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--fc-brand);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   7. Coupon
+───────────────────────────────────────────────────────────────────────────── */
+.fc-coupon {
+    margin: 16px 0;
+}
+
+.fc-coupon__toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--fc-accent);
+    font-size: .8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity var(--fc-dur) var(--fc-ease);
+}
+.fc-coupon__toggle:hover { opacity: .75; }
+
+.fc-coupon__toggle .fc-icon--toggle {
+    transition: transform var(--fc-dur) var(--fc-ease);
+}
+
+.fc-coupon__toggle[aria-expanded="true"] .fc-icon--toggle {
+    transform: rotate(180deg);
+}
+
+.fc-coupon__form {
+    margin-top: 10px;
+}
+
+.fc-coupon__row {
+    display: flex;
+    gap: 8px;
+}
+
+.fc-coupon__input {
+    flex: 1;
+    height: 40px;
+    padding: 0 12px;
+    font-size: .875rem;
+    border: 1.5px solid var(--fc-border);
+    border-radius: var(--fc-field-radius);
+    background: var(--fc-surface);
+    color: var(--fc-text);
+    outline: none;
+    transition: border-color var(--fc-dur) var(--fc-ease);
+}
+.fc-coupon__input:focus {
+    border-color: var(--fc-border-focus);
+    box-shadow: var(--fc-shadow-focus);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   8. Trust badges
+───────────────────────────────────────────────────────────────────────────── */
+.fc-trust-badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px 24px;
+    padding: 16px 0 4px;
+}
+
+.fc-trust-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--fc-text-muted);
+    font-size: .75rem;
+    font-weight: 500;
+}
+
+.fc-trust-badge__icon {
+    color: var(--fc-accent);
+    opacity: .8;
+    flex-shrink: 0;
+}
+
+/* Card icons */
+.fc-card-icons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    padding-top: 12px;
+    width: 100%;
+}
+
+.fc-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    padding: 0 8px;
+    border: 1px solid var(--fc-border);
+    border-radius: 4px;
+    background: var(--fc-surface);
+    font-size: .625rem;
+    font-weight: 700;
+    color: var(--fc-text-muted);
+    letter-spacing: .02em;
+}
+
+.fc-card-icon--visa       { color: #1a1f71; }
+.fc-card-icon--mastercard { color: #eb001b; }
+.fc-card-icon--amex       { color: #007bc1; }
+.fc-card-icon--paypal     { color: #003087; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   9. Place order button & payment
+───────────────────────────────────────────────────────────────────────────── */
+
+/* Override WooCommerce payment section */
+#payment,
+.fc-form__section--payment #payment {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Payment method list */
+#payment .payment_methods {
+    list-style: none !important;
+    margin: 0 0 20px !important;
+    padding: 0 !important;
+    border: 1.5px solid var(--fc-border) !important;
+    border-radius: var(--fc-field-radius) !important;
+    overflow: hidden;
+}
+
+#payment .payment_methods li {
+    padding: 14px 18px !important;
+    border-bottom: 1px solid var(--fc-border) !important;
+    transition: background var(--fc-dur) var(--fc-ease);
+}
+#payment .payment_methods li:last-child { border-bottom: none !important; }
+#payment .payment_methods li:hover { background: var(--fc-surface-2) !important; }
+
+#payment .payment_methods li label {
+    font-size: .9375rem !important;
+    font-weight: 600 !important;
+    color: var(--fc-text) !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#payment .payment_methods li .payment_box {
+    padding: 14px 0 4px !important;
+    background: transparent !important;
+    font-size: .875rem;
+}
+
+/* Stripe Elements inside payment box */
+#payment .payment_methods .StripeElement {
+    padding: 12px 14px !important;
+    border: 1.5px solid var(--fc-border) !important;
+    border-radius: var(--fc-field-radius) !important;
+    background: var(--fc-surface) !important;
+}
+
+/* Place order button */
+#place_order,
+.woocommerce-checkout #place_order,
+.fc-place-order {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    height: 56px !important;
+    padding: 0 32px !important;
+    background: var(--fc-accent) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--fc-btn-radius) !important;
+    font-size: 1.0625rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -.02em !important;
+    cursor: pointer !important;
+    transition: background var(--fc-dur) var(--fc-ease),
+                transform .1s var(--fc-ease),
+                box-shadow var(--fc-dur) var(--fc-ease) !important;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--fc-accent) 40%, transparent) !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    text-transform: none !important;
+}
+
+#place_order:hover,
+.fc-place-order:hover {
+    background: var(--fc-accent-hover) !important;
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--fc-accent) 50%, transparent) !important;
+    transform: translateY(-1px) !important;
+}
+
+#place_order:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--fc-accent) 30%, transparent) !important;
+}
+
+#place_order.loading,
+#place_order:disabled {
+    opacity: .7 !important;
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   10. Shared buttons
+───────────────────────────────────────────────────────────────────────────── */
+.fc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 20px;
+    height: 40px;
+    border-radius: var(--fc-btn-radius);
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--fc-dur) var(--fc-ease);
+    text-decoration: none;
+    border: none;
+}
+
+.fc-btn--primary {
+    background: var(--fc-accent);
+    color: #fff;
+}
+.fc-btn--primary:hover { background: var(--fc-accent-hover); }
+
+.fc-btn--outline {
+    background: transparent;
+    color: var(--fc-accent);
+    border: 1.5px solid var(--fc-accent);
+}
+.fc-btn--outline:hover {
+    background: color-mix(in srgb, var(--fc-accent) 8%, transparent);
+}
+
+.fc-btn--ghost {
+    background: transparent;
+    color: var(--fc-text-muted);
+    border: 1.5px solid var(--fc-border);
+}
+.fc-btn--ghost:hover {
+    border-color: var(--fc-text-muted);
+    color: var(--fc-text);
+}
+
+.fc-btn--sm { height: 34px; padding: 0 14px; font-size: .8125rem; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   11. Icons
+───────────────────────────────────────────────────────────────────────────── */
+.fc-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
+.fc-icon--xs { width: 12px; height: 12px; }
+.fc-icon--sm { width: 14px; height: 14px; }
+.fc-icon--toggle { transition: transform var(--fc-dur) var(--fc-ease); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   12. Mobile responsive toggle (order summary)
+───────────────────────────────────────────────────────────────────────────── */
+.fc-mobile-summary-toggle {
+    display: none; /* shown at mobile only */
+    background: var(--fc-surface);
+    border-bottom: 1px solid var(--fc-border);
+}
+
+.fc-mobile-summary-toggle__btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--fc-accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.fc-mobile-summary-toggle__left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fc-mobile-summary-toggle__text { font-weight: 600; }
+.fc-mobile-summary-toggle__total { font-weight: 700; font-size: 1rem; }
+
+.fc-mobile-summary-toggle__content {
+    padding: 20px;
+    background: var(--fc-surface-2);
+}
+
+/* Guest CTA */
+.fc-guest-cta {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: var(--fc-field-radius);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.fc-guest-cta__text {
+    font-size: .875rem;
+    color: #1e40af;
+    margin: 0;
+}
+
+/* Returning customer */
+.fc-returning-customer {
+    margin-bottom: 16px;
+}
+
+/* Ship to different address */
+.fc-shipping-fields { margin-top: 12px; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   13. Animations & micro-interactions
+───────────────────────────────────────────────────────────────────────────── */
+@keyframes fc-slide-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fc-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.fc-checkout__main {
+    animation: fc-fade-in .3s ease;
+}
+
+.fc-form__section {
+    animation: fc-slide-down .25s ease backwards;
+}
+
+.fc-form__section:nth-child(1) { animation-delay: .04s; }
+.fc-form__section:nth-child(2) { animation-delay: .08s; }
+.fc-form__section:nth-child(3) { animation-delay: .12s; }
+.fc-form__section:nth-child(4) { animation-delay: .16s; }
+
+/* Loading spinner on place order button */
+#place_order.processing::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: fc-spin .6s linear infinite;
+    margin-left: 8px;
+}
+
+@keyframes fc-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   14. Mobile responsive
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .fc-checkout__main {
+        grid-template-columns: 1fr;
+        padding-top: 24px;
+    }
+
+    .fc-checkout__summary-col {
+        display: none; /* Hidden — shown via mobile toggle */
+    }
+
+    .fc-mobile-summary-toggle {
+        display: block;
+    }
+}
+
+@media (max-width: 640px) {
+    .fc-checkout__main { padding: 16px 16px 60px; }
+
+    .fc-form__section { padding: 20px 16px; border-radius: 12px; }
+
+    .fc-form__fields--grid {
+        grid-template-columns: 1fr;
+    }
+
+    .fc-form__fields--grid .form-row-first,
+    .fc-form__fields--grid .form-row-last {
+        grid-column: 1;
+    }
+
+    .fc-progress__label { display: none; }
+
+    #place_order { height: 52px !important; font-size: 1rem !important; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   15. Hide site chrome (header/footer)
+───────────────────────────────────────────────────────────────────────────── */
+.flowcheckout-hide-chrome .site-header,
+.flowcheckout-hide-chrome #masthead,
+.flowcheckout-hide-chrome #header,
+.flowcheckout-hide-chrome .main-navigation,
+.flowcheckout-hide-chrome header.entry-header,
+.flowcheckout-hide-chrome .site-footer,
+.flowcheckout-hide-chrome #colophon,
+.flowcheckout-hide-chrome #footer,
+.flowcheckout-hide-chrome footer.site-footer,
+.flowcheckout-hide-chrome .storefront-breadcrumb,
+.flowcheckout-hide-chrome .woocommerce-breadcrumb,
+.flowcheckout-hide-chrome .astra-breadcrumbs,
+.flowcheckout-hide-chrome .elementor-location-header,
+.flowcheckout-hide-chrome .elementor-location-footer {
+    display: none !important;
+}
+
+.flowcheckout-active .site-main,
+.flowcheckout-active #main,
+.flowcheckout-active #primary,
+.flowcheckout-active main {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Remove default WC wrapper */
+.flowcheckout-active .woocommerce {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* ── Hide page title / hero banner (theme-specific) ─────────────────────────
+   Covers: Elementor page header, Hello theme sections, Astra page title,
+   OceanWP, Flatsome, and common page-hero patterns                         */
+.flowcheckout-hide-chrome .page-header,
+.flowcheckout-hide-chrome .page-title-bar,
+.flowcheckout-hide-chrome .entry-header,
+.flowcheckout-hide-chrome .page-hero,
+.flowcheckout-hide-chrome .hero-section,
+.flowcheckout-hide-chrome .woocommerce-page-header,
+.flowcheckout-hide-chrome .ast-above-header-bar,
+.flowcheckout-hide-chrome .ast-header-break-point,
+.flowcheckout-hide-chrome #ast-mobile-header,
+.flowcheckout-hide-chrome .elementor-section.elementor-top-section:first-of-type:not(.fc-checkout),
+.flowcheckout-hide-chrome .eael-woo-checkout-wrapper ~ .elementor-section,
+.flowcheckout-hide-chrome .woocommerce-page .page-title,
+.flowcheckout-hide-chrome h1.page-title,
+.flowcheckout-hide-chrome .entry-title {
+    display: none !important;
+}
+
+/* Hide the Bolla/Hello-theme hero — typically a full-width section before content */
+.flowcheckout-active.woocommerce-checkout .elementor-section:not(:has(.fc-checkout)) {
+    display: none !important;
+}
