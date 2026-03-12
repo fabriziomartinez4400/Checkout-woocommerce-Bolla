@@ -763,6 +763,28 @@
     font-size: .875rem !important;
 }
 
+/* ── Payment box: don't constrain Stripe/WooPayments inputs with fixed height ── */
+#payment .payment_box input,
+#payment .payment_box select,
+#payment .payment_box textarea,
+.payment_box .input-text,
+.payment_box input[type="text"],
+.payment_box input[type="number"],
+.payment_box input[type="tel"],
+.payment_box input[type="email"] {
+    height: auto !important;
+    min-height: 44px !important;
+}
+
+/* WooPayments Payment Element (iframe wrapper) */
+#wcpay-payment-element,
+#wc-woopayments-payment-element,
+.wcpay-upe-form,
+.wcpay-payment-element {
+    height: auto !important;
+    min-height: 200px;
+}
+
 /* ── WooPayments / Stripe Elements ───────────────────────────────────────── */
 
 /* WooPayments card element container */
@@ -1232,4 +1254,283 @@
 /* Hide the Bolla/Hello-theme hero — typically a full-width section before content */
 .flowcheckout-active.woocommerce-checkout .elementor-section:not(:has(.fc-checkout)) {
     display: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   16. Shipping Calculator (in payment section & cart widget)
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Shipping calculator box (inside payment section) ── */
+.fc-ship-calc-box {
+    border: 1.5px solid var(--fc-border);
+    border-radius: var(--fc-field-radius);
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    background: var(--fc-surface-2);
+}
+
+.fc-ship-calc-box__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.fc-ship-calc-box__label {
+    font-size: .8125rem;
+    font-weight: 700;
+    color: var(--fc-text);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.fc-ship-calc-box__current {
+    font-size: .875rem;
+    color: var(--fc-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.fc-ship-calc-box__done-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: color-mix(in srgb, var(--fc-success) 12%, transparent);
+    color: var(--fc-success);
+    font-size: .75rem;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 3px 10px;
+}
+
+.fc-ship-calc-box__edit {
+    background: none;
+    border: none;
+    color: var(--fc-accent);
+    font-size: .8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.fc-ship-calc-box__edit:hover { opacity: .75; }
+
+.fc-ship-calc-box__desc {
+    font-size: .875rem;
+    color: var(--fc-text-muted);
+    margin: 10px 0 12px;
+    line-height: 1.5;
+}
+
+.fc-ship-calc-box__row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.fc-ship-calc-box__select,
+.fc-ship-calc-box__postcode {
+    flex: 1;
+    min-width: 110px;
+    height: 42px !important;
+    padding: 0 12px !important;
+    font-size: .875rem !important;
+    color: var(--fc-text) !important;
+    background: var(--fc-surface) !important;
+    border: 1.5px solid var(--fc-border) !important;
+    border-radius: var(--fc-field-radius) !important;
+    outline: none !important;
+    transition: border-color var(--fc-dur) var(--fc-ease) !important;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.fc-ship-calc-box__select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 16px 16px !important;
+    padding-right: 36px !important;
+}
+
+.fc-ship-calc-box__select:focus,
+.fc-ship-calc-box__postcode:focus {
+    border-color: var(--fc-border-focus) !important;
+    box-shadow: var(--fc-shadow-focus) !important;
+}
+
+.fc-ship-calc-box__postcode::placeholder {
+    color: var(--fc-text-light);
+}
+
+.fc-ship-calc-box__rates {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fc-ship-calc-box__rate {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: .875rem;
+    padding: 8px 12px;
+    background: var(--fc-surface);
+    border: 1px solid var(--fc-border);
+    border-radius: calc(var(--fc-field-radius) - 2px);
+    color: var(--fc-text);
+}
+
+.fc-ship-calc-box__rate-cost {
+    font-weight: 700;
+    color: var(--fc-brand);
+}
+
+.fc-ship-calc-box__no-rates {
+    font-size: .875rem;
+    color: var(--fc-text-muted);
+    padding: 8px 0;
+    font-style: italic;
+}
+
+.fc-ship-calc-box__loading {
+    font-size: .875rem;
+    color: var(--fc-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+}
+
+.fc-ship-calc-box__loading::before {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--fc-border);
+    border-top-color: var(--fc-accent);
+    border-radius: 50%;
+    animation: fc-spin .6s linear infinite;
+    flex-shrink: 0;
+}
+
+/* ── Express payment wrapper (Google Pay / Apple Pay) ── */
+.fc-express-section {
+    margin-bottom: 20px;
+    padding: 16px 0 4px;
+    border-top: 1px solid var(--fc-border);
+}
+
+.fc-express-section__label {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--fc-text-muted);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin: 0 0 12px;
+}
+
+.fc-express-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 14px 0 0;
+    color: var(--fc-text-light);
+    font-size: .8125rem;
+}
+.fc-express-divider::before,
+.fc-express-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--fc-border);
+}
+
+/* ── Cart page shipping widget ── */
+.fc-ship-calc-widget {
+    background: var(--fc-surface);
+    border: 1px solid var(--fc-border);
+    border-radius: 12px;
+    padding: 20px 20px 16px;
+    margin-bottom: 20px;
+}
+
+.fc-ship-calc-widget__title {
+    font-size: .9375rem;
+    font-weight: 700;
+    color: var(--fc-brand);
+    margin: 0 0 6px;
+    letter-spacing: -.01em;
+}
+
+.fc-ship-calc-widget__desc {
+    font-size: .8125rem;
+    color: var(--fc-text-muted);
+    margin: 0 0 14px;
+    line-height: 1.5;
+}
+
+.fc-ship-calc-widget__row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.fc-ship-calc-widget__select,
+.fc-ship-calc-widget__postcode {
+    flex: 1;
+    min-width: 120px;
+    height: 42px;
+    padding: 0 12px;
+    font-size: .875rem;
+    color: var(--fc-text);
+    background: var(--fc-surface);
+    border: 1.5px solid var(--fc-border);
+    border-radius: var(--fc-field-radius);
+    outline: none;
+    transition: border-color var(--fc-dur) var(--fc-ease);
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.fc-ship-calc-widget__select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px 16px;
+    padding-right: 36px;
+}
+
+.fc-ship-calc-widget__select:focus,
+.fc-ship-calc-widget__postcode:focus {
+    border-color: var(--fc-border-focus);
+    box-shadow: var(--fc-shadow-focus);
+}
+
+.fc-ship-calc-widget__postcode::placeholder {
+    color: var(--fc-text-light);
+}
+
+.fc-ship-calc-widget__result {
+    margin-top: 12px;
+}
+
+@media (max-width: 640px) {
+    .fc-ship-calc-box__row {
+        flex-direction: column;
+    }
+    .fc-ship-calc-box__select,
+    .fc-ship-calc-box__postcode {
+        width: 100%;
+    }
+    .fc-ship-calc-widget__row {
+        flex-direction: column;
+    }
 }

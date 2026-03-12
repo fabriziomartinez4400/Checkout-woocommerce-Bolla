@@ -115,8 +115,6 @@ $ec_style         = FlowCheckout_Settings::get( 'express_checkout_style', 'auto'
                   novalidate
                   action="<?php echo esc_url( wc_get_checkout_url() ); ?>">
 
-                <?php do_action( 'woocommerce_checkout_before_customer_details' ); ?>
-
                 <?php do_action( 'woocommerce_checkout_before_order_review_heading' ); ?>
 
                 <!-- ── Contact ─────────────────────────────────────────────── -->
@@ -248,12 +246,74 @@ $ec_style         = FlowCheckout_Settings::get( 'express_checkout_style', 'auto'
                 <div class="fc-form__section fc-form__section--payment" id="fc-section-payment">
                     <h2 class="fc-form__section-title"><?php esc_html_e( 'Payment', 'flowcheckout' ); ?></h2>
 
+                    <?php
+                    // ── Shipping destination calculator (within payment section) ──────
+                    $fc_ship_country  = WC()->customer ? WC()->customer->get_billing_country() : '';
+                    $fc_ship_postcode = WC()->customer ? WC()->customer->get_billing_postcode() : '';
+                    $fc_shipping_done = ! empty( $fc_ship_country );
+                    ?>
+                    <div class="fc-ship-calc-box" id="fc-ship-calc-box">
+                        <div class="fc-ship-calc-box__header">
+                            <span class="fc-ship-calc-box__label">
+                                <?php esc_html_e( 'Shipping destination', 'flowcheckout' ); ?>
+                            </span>
+                            <?php if ( $fc_shipping_done ) : ?>
+                                <span class="fc-ship-calc-box__current fc-ship-calc-box__current-info">
+                                    <span class="fc-ship-calc-box__done-badge">
+                                        ✓ <?php
+                                            $countries = WC()->countries->get_countries();
+                                            echo esc_html( $countries[ $fc_ship_country ] ?? $fc_ship_country );
+                                            if ( $fc_ship_postcode ) echo ' &nbsp;' . esc_html( $fc_ship_postcode );
+                                        ?>
+                                    </span>
+                                    <button type="button" class="fc-ship-calc-box__edit" id="fc-ship-calc-edit">
+                                        <?php esc_html_e( 'Change', 'flowcheckout' ); ?>
+                                    </button>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="fc-ship-calc-box__form" id="fc-ship-calc-form" <?php echo $fc_shipping_done ? 'hidden' : ''; ?>>
+                            <p class="fc-ship-calc-box__desc">
+                                <?php esc_html_e( 'Enter your country and ZIP code to see shipping costs and enable Google Pay / Apple Pay.', 'flowcheckout' ); ?>
+                            </p>
+                            <div class="fc-ship-calc-box__row">
+                                <select id="fc-ship-country-calc" class="fc-ship-calc-box__select">
+                                    <option value=""><?php esc_html_e( 'Select country…', 'flowcheckout' ); ?></option>
+                                    <?php foreach ( WC()->countries->get_shipping_countries() as $code => $name ) : ?>
+                                        <option value="<?php echo esc_attr( $code ); ?>"<?php selected( $code, $fc_ship_country ); ?>>
+                                            <?php echo esc_html( $name ); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="text"
+                                       id="fc-ship-postcode-calc"
+                                       class="fc-ship-calc-box__postcode"
+                                       value="<?php echo esc_attr( $fc_ship_postcode ); ?>"
+                                       placeholder="<?php esc_attr_e( 'ZIP / Postcode', 'flowcheckout' ); ?>">
+                                <button type="button" id="fc-calc-ship-btn" class="fc-btn fc-btn--primary fc-btn--sm">
+                                    <?php esc_html_e( 'Calculate', 'flowcheckout' ); ?>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="fc-ship-calc-rates" <?php echo $fc_shipping_done ? '' : 'hidden'; ?>></div>
+                    </div><!-- .fc-ship-calc-box -->
+
+                    <!-- ── Express payment (Google Pay / Apple Pay) ────────────── -->
+                    <!-- Shown after shipping is calculated; WooPayments renders here if configured -->
+                    <div class="fc-express-wrap" id="fc-express-wrap" <?php echo $fc_shipping_done ? '' : 'style="display:none"'; ?>>
+                        <?php do_action( 'woocommerce_checkout_before_customer_details' ); ?>
+
+                        <?php if ( $fc_shipping_done ) : ?>
+                            <div class="fc-express-divider"><?php esc_html_e( 'Or pay with card', 'flowcheckout' ); ?></div>
+                        <?php endif; ?>
+                    </div>
+
                     <?php do_action( 'woocommerce_checkout_before_order_review' ); ?>
 
                     <?php
                     // Renders payment method list + place order button.
-                    // The place order button (#place_order) MUST be rendered here — do NOT filter
-                    // woocommerce_order_button_html to empty, as that removes the submit button.
                     woocommerce_checkout_payment();
                     ?>
 
