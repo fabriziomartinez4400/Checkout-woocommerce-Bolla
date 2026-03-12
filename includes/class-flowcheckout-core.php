@@ -28,6 +28,16 @@ class FlowCheckout_Core {
 
         add_action( 'wp_ajax_flowcheckout_refresh_totals',        array( $self, 'ajax_refresh_totals' ) );
         add_action( 'wp_ajax_nopriv_flowcheckout_refresh_totals', array( $self, 'ajax_refresh_totals' ) );
+
+        // ── Shipping location AJAX (used by cart-page widget) ─────────────────
+        add_action( 'wp_ajax_flowcheckout_update_shipping_location',        array( $self, 'ajax_update_shipping_location' ) );
+        add_action( 'wp_ajax_nopriv_flowcheckout_update_shipping_location', array( $self, 'ajax_update_shipping_location' ) );
+
+        // ── Cart page shipping calculator widget ──────────────────────────────
+        add_action( 'woocommerce_before_cart_totals', array( $self, 'render_cart_shipping_calc' ) );
+
+        // ── Shortcode: [flowcheckout_shipping_calc] ───────────────────────────
+        add_shortcode( 'flowcheckout_shipping_calc', array( $self, 'shipping_calc_shortcode' ) );
     }
 
     // ── Template Override ─────────────────────────────────────────────────────
@@ -75,6 +85,8 @@ class FlowCheckout_Core {
             true
         );
 
+        $ship_country  = WC()->customer ? WC()->customer->get_billing_country() : '';
+
         wp_localize_script( 'flowcheckout-checkout', 'flowcheckoutData', array(
             'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
             'nonce'             => wp_create_nonce( 'flowcheckout_frontend' ),
@@ -82,14 +94,22 @@ class FlowCheckout_Core {
             'stickyOrderSum'    => (bool) FlowCheckout_Settings::get( 'order_summary_sticky', true ),
             'collapsibleMobile' => (bool) FlowCheckout_Settings::get( 'collapsible_on_mobile', true ),
             'progressSteps'     => FlowCheckout_Settings::get( 'progress_bar_steps', array() ),
+            'shippingDone'      => ! empty( $ship_country ),
             'i18n'              => array(
-                'orderSummaryToggle' => __( 'Order summary', 'flowcheckout' ),
-                'processing'         => __( 'Processing…', 'flowcheckout' ),
-                'fieldRequired'      => __( 'This field is required.', 'flowcheckout' ),
-                'invalidEmail'       => __( 'Please enter a valid email address.', 'flowcheckout' ),
-                'showSummary'        => __( 'Show order summary', 'flowcheckout' ),
-                'hideSummary'        => __( 'Hide order summary', 'flowcheckout' ),
-                'apply'              => __( 'Apply', 'flowcheckout' ),
+                'orderSummaryToggle'  => __( 'Order summary', 'flowcheckout' ),
+                'processing'          => __( 'Processing…', 'flowcheckout' ),
+                'fieldRequired'       => __( 'This field is required.', 'flowcheckout' ),
+                'invalidEmail'        => __( 'Please enter a valid email address.', 'flowcheckout' ),
+                'showSummary'         => __( 'Show order summary', 'flowcheckout' ),
+                'hideSummary'         => __( 'Hide order summary', 'flowcheckout' ),
+                'apply'               => __( 'Apply', 'flowcheckout' ),
+                'calculate'           => __( 'Calculate', 'flowcheckout' ),
+                'calculatingShipping' => __( 'Calculating shipping…', 'flowcheckout' ),
+                'noShipping'          => __( 'Shipping', 'flowcheckout' ),
+                'noShippingAvail'     => __( 'No shipping methods available for this location.', 'flowcheckout' ),
+                'calcError'           => __( 'Could not calculate shipping. Please check your details.', 'flowcheckout' ),
+                'change'              => __( 'Change', 'flowcheckout' ),
+                'shipping'            => __( 'Shipping', 'flowcheckout' ),
             ),
         ) );
     }
@@ -239,5 +259,130 @@ class FlowCheckout_Core {
         woocommerce_order_review();
         $html = ob_get_clean();
         wp_send_json_success( array( 'html' => $html ) );
+    }
+
+    // ── AJAX: Update shipping location (used by cart page widget) ─────────────
+    public function ajax_update_shipping_location() {
+        check_ajax_referer( 'flowcheckout_frontend', 'nonce' );
+
+        $country  = sanitize_text_field( wp_unslash( $_POST['country']  ?? '' ) );
+        $postcode = sanitize_text_field( wp_unslash( $_POST['postcode'] ?? '' ) );
+
+        if ( empty( $country ) ) {
+            wp_send_json_error( array( 'message' => __( 'Country is required.', 'flowcheckout' ) ) );
+        }
+
+        // Update WooCommerce customer session
+        WC()->customer->set_billing_country( $country );
+        WC()->customer->set_billing_postcode( $postcode );
+        WC()->customer->set_shipping_country( $country );
+        WC()->customer->set_shipping_postcode( $postcode );
+        WC()->customer->save();
+
+        // Recalculate cart & shipping
+        WC()->cart->calculate_totals();
+
+        $packages = WC()->shipping()->get_packages();
+        $rates    = array();
+
+        foreach ( $packages as $package ) {
+            foreach ( $package['rates'] as $method ) {
+                $rates[] = array(
+                    'id'    => $method->id,
+                    'label' => $method->get_label(),
+                    'cost'  => wc_cart_totals_shipping_method_label( $method ),
+                );
+            }
+        }
+
+        $countries    = WC()->countries->get_countries();
+        $country_name = $countries[ $country ] ?? $country;
+
+        wp_send_json_success( array(
+            'rates'    => $rates,
+            'country'  => $country_name,
+            'postcode' => $postcode,
+        ) );
+    }
+
+    // ── Cart page shipping calculator widget ──────────────────────────────────
+    public function render_cart_shipping_calc() {
+        if ( ! is_cart() ) return;
+
+        $ship_country  = WC()->customer ? WC()->customer->get_billing_country() : '';
+        $ship_postcode = WC()->customer ? WC()->customer->get_billing_postcode() : '';
+
+        echo $this->get_shipping_calc_html( $ship_country, $ship_postcode ); // phpcs:ignore
+    }
+
+    // ── Shortcode: [flowcheckout_shipping_calc] ───────────────────────────────
+    public function shipping_calc_shortcode( $atts = array() ) {
+        if ( ! function_exists( 'WC' ) ) return '';
+
+        $ship_country  = WC()->customer ? WC()->customer->get_billing_country() : '';
+        $ship_postcode = WC()->customer ? WC()->customer->get_billing_postcode() : '';
+
+        return $this->get_shipping_calc_html( $ship_country, $ship_postcode );
+    }
+
+    // ── Shared HTML: shipping calculator widget ───────────────────────────────
+    private function get_shipping_calc_html( $ship_country = '', $ship_postcode = '' ) {
+        // Enqueue assets if not already done (e.g. on cart page or via shortcode)
+        if ( ! wp_script_is( 'flowcheckout-checkout', 'enqueued' ) ) {
+            wp_enqueue_style(
+                'flowcheckout-checkout',
+                FLOWCHECKOUT_ASSETS . 'css/flowcheckout-checkout.css',
+                array( 'woocommerce-general' ),
+                FLOWCHECKOUT_VERSION
+            );
+            wp_enqueue_script(
+                'flowcheckout-checkout',
+                FLOWCHECKOUT_ASSETS . 'js/flowcheckout-checkout.js',
+                array( 'jquery' ),
+                FLOWCHECKOUT_VERSION,
+                true
+            );
+            wp_localize_script( 'flowcheckout-checkout', 'flowcheckoutData', array(
+                'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+                'nonce'        => wp_create_nonce( 'flowcheckout_frontend' ),
+                'shippingDone' => ! empty( $ship_country ),
+                'i18n'         => array(
+                    'calculate'           => __( 'Calculate', 'flowcheckout' ),
+                    'calculatingShipping' => __( 'Calculating shipping…', 'flowcheckout' ),
+                    'noShippingAvail'     => __( 'No shipping methods available for this location.', 'flowcheckout' ),
+                    'calcError'           => __( 'Could not calculate shipping.', 'flowcheckout' ),
+                    'apply'               => __( 'Apply', 'flowcheckout' ),
+                ),
+            ) );
+        }
+
+        ob_start();
+        ?>
+        <div class="fc-ship-calc-widget">
+            <h3 class="fc-ship-calc-widget__title"><?php esc_html_e( 'Calculate shipping', 'flowcheckout' ); ?></h3>
+            <p class="fc-ship-calc-widget__desc">
+                <?php esc_html_e( 'Enter your country and ZIP code to calculate shipping costs.', 'flowcheckout' ); ?>
+            </p>
+            <div class="fc-ship-calc-widget__row">
+                <select class="fc-ship-calc-widget__select">
+                    <option value=""><?php esc_html_e( 'Select country…', 'flowcheckout' ); ?></option>
+                    <?php foreach ( WC()->countries->get_shipping_countries() as $code => $name ) : ?>
+                        <option value="<?php echo esc_attr( $code ); ?>"<?php selected( $code, $ship_country ); ?>>
+                            <?php echo esc_html( $name ); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <input type="text"
+                       class="fc-ship-calc-widget__postcode"
+                       value="<?php echo esc_attr( $ship_postcode ); ?>"
+                       placeholder="<?php esc_attr_e( 'ZIP / Postcode', 'flowcheckout' ); ?>">
+                <button type="button" class="fc-btn fc-btn--primary fc-btn--sm fc-ship-calc-widget__btn">
+                    <?php esc_html_e( 'Calculate', 'flowcheckout' ); ?>
+                </button>
+            </div>
+            <div class="fc-ship-calc-widget__result" hidden></div>
+        </div>
+        <?php
+        return ob_get_clean();
     }
 }
