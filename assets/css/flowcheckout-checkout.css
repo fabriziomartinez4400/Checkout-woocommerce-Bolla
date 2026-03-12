@@ -684,8 +684,9 @@
    9. Place order button & payment
 ───────────────────────────────────────────────────────────────────────────── */
 
-/* Override WooCommerce payment section */
+/* Override WooCommerce payment section wrapper */
 #payment,
+.woocommerce-checkout-payment,
 .fc-form__section--payment #payment {
     background: transparent !important;
     border: none !important;
@@ -694,7 +695,8 @@
 }
 
 /* Payment method list */
-#payment .payment_methods {
+#payment .payment_methods,
+#payment ul.wc_payment_methods {
     list-style: none !important;
     margin: 0 0 20px !important;
     padding: 0 !important;
@@ -703,36 +705,232 @@
     overflow: hidden;
 }
 
-#payment .payment_methods li {
-    padding: 14px 18px !important;
+#payment .payment_methods li,
+#payment ul.wc_payment_methods li {
+    padding: 0 !important;
     border-bottom: 1px solid var(--fc-border) !important;
     transition: background var(--fc-dur) var(--fc-ease);
 }
-#payment .payment_methods li:last-child { border-bottom: none !important; }
-#payment .payment_methods li:hover { background: var(--fc-surface-2) !important; }
+#payment .payment_methods li:last-child,
+#payment ul.wc_payment_methods li:last-child { border-bottom: none !important; }
 
-#payment .payment_methods li label {
+/* Payment method label row (radio + icon + name) */
+#payment .payment_methods li > label,
+#payment ul.wc_payment_methods li > label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 14px 18px !important;
     font-size: .9375rem !important;
     font-weight: 600 !important;
     color: var(--fc-text) !important;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    cursor: pointer !important;
+    margin: 0 !important;
+    transition: background var(--fc-dur) var(--fc-ease);
+}
+#payment .payment_methods li > label:hover,
+#payment ul.wc_payment_methods li > label:hover {
+    background: var(--fc-surface-2) !important;
 }
 
-#payment .payment_methods li .payment_box {
-    padding: 14px 0 4px !important;
-    background: transparent !important;
-    font-size: .875rem;
+/* Payment radio button */
+#payment .payment_methods li input[type="radio"],
+#payment ul.wc_payment_methods li input[type="radio"] {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    accent-color: var(--fc-accent) !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
 }
 
-/* Stripe Elements inside payment box */
-#payment .payment_methods .StripeElement {
-    padding: 12px 14px !important;
+/* Gateway icons (img tags in label) */
+#payment .payment_methods li label img {
+    max-height: 24px !important;
+    width: auto !important;
+    vertical-align: middle !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* Payment box (the expandable card fields area) */
+#payment .payment_methods li .payment_box,
+#payment ul.wc_payment_methods li .payment_box {
+    padding: 0 18px 18px !important;
+    background: var(--fc-surface-2) !important;
+    border-top: 1px solid var(--fc-border) !important;
+    font-size: .875rem !important;
+}
+
+/* ── WooPayments / Stripe Elements ───────────────────────────────────────── */
+
+/* WooPayments card element container */
+.wcpay-card-element,
+#wc-stripe-cc-form,
+.wc-payment-form {
+    padding: 4px 0 0 !important;
+}
+
+/* Stripe mounted iframe / StripeElement */
+.StripeElement,
+.wcpay-card-element .StripeElement,
+#wc-stripe-elements-form .StripeElement,
+.wcpay-payment-element {
+    display: block;
+    padding: 13px 14px !important;
     border: 1.5px solid var(--fc-border) !important;
     border-radius: var(--fc-field-radius) !important;
     background: var(--fc-surface) !important;
+    transition: border-color var(--fc-dur) var(--fc-ease),
+                box-shadow var(--fc-dur) var(--fc-ease) !important;
+}
+
+.StripeElement--focus,
+.StripeElement:focus-within {
+    border-color: var(--fc-border-focus) !important;
+    box-shadow: var(--fc-shadow-focus) !important;
+}
+
+.StripeElement--invalid {
+    border-color: var(--fc-error) !important;
+    box-shadow: 0 0 0 3px rgba(220,38,38,.1) !important;
+}
+
+/* Individual card field rows inside WooPayments form */
+#wc-stripe-cc-form .form-row,
+.wc-stripe-elements-form .form-row,
+#wc-woopayments-form .form-row {
+    margin-bottom: 12px !important;
+}
+
+#wc-stripe-cc-form .form-row label,
+.wc-stripe-elements-form .form-row label,
+#wc-woopayments-form .form-row label {
+    font-size: .8125rem !important;
+    font-weight: 600 !important;
+    color: var(--fc-text) !important;
+    display: block !important;
+    margin-bottom: 6px !important;
+}
+
+/* WooPayments Payment Element (newer unified field) */
+#wc-woopayments-payment-element,
+#wcpay-payment-element,
+.wcpay-upe-form {
+    margin-top: 8px;
+}
+
+/* ── WooPayments Express Checkout (Google Pay / Apple Pay) ───────────────── */
+
+/* Container rendered by woocommerce_checkout_before_customer_details */
+#wcpay-payment-request-wrapper,
+#wcpay-express-checkout-wrapper,
+#wc-stripe-payment-request-button-wrapper {
+    background: var(--fc-surface) !important;
+    border: 1px solid var(--fc-border) !important;
+    border-radius: 16px !important;
+    padding: 20px 24px !important;
+    margin-bottom: 16px !important;
+}
+
+/* The actual button container */
+#wcpay-payment-request-button,
+#wcpay-express-checkout-element,
+#wc-stripe-payment-request-button {
+    min-height: 48px;
+    border-radius: var(--fc-btn-radius) !important;
+}
+
+/* Separator between express buttons and standard form */
+#wcpay-payment-request-button-separator,
+#wcpay-express-checkout-separator,
+#wc-stripe-payment-request-button-separator {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin: 16px 0 4px !important;
+    color: var(--fc-text-muted) !important;
+    font-size: .8125rem !important;
+}
+
+#wcpay-payment-request-button-separator::before,
+#wcpay-payment-request-button-separator::after,
+#wcpay-express-checkout-separator::before,
+#wcpay-express-checkout-separator::after,
+#wc-stripe-payment-request-button-separator::before,
+#wc-stripe-payment-request-button-separator::after {
+    content: '' !important;
+    flex: 1 !important;
+    height: 1px !important;
+    background: var(--fc-border) !important;
+}
+
+/* WooPayments notice / error messages */
+.wcpay-inline-notice,
+.wcpay-error,
+#wcpay-errors {
+    background: #fef2f2 !important;
+    border: 1px solid #fecaca !important;
+    border-radius: var(--fc-field-radius) !important;
+    color: var(--fc-error) !important;
+    padding: 10px 14px !important;
+    font-size: .875rem !important;
+    margin: 8px 0 !important;
+}
+
+/* ── Shipping method selector ─────────────────────────────────────────────── */
+
+.fc-shipping-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fc-shipping-method {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--fc-border);
+    border-radius: var(--fc-field-radius);
+    cursor: pointer;
+    transition: border-color var(--fc-dur) var(--fc-ease),
+                background var(--fc-dur) var(--fc-ease);
+}
+
+.fc-shipping-method:has(input:checked),
+.fc-shipping-method--selected {
+    border-color: var(--fc-accent);
+    background: color-mix(in srgb, var(--fc-accent) 5%, transparent);
+}
+
+.fc-shipping-method:hover {
+    border-color: var(--fc-accent);
+}
+
+.fc-shipping-method input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    accent-color: var(--fc-accent);
+    flex-shrink: 0;
+    cursor: pointer;
+    margin: 0;
+}
+
+.fc-shipping-method__name {
+    flex: 1;
+    font-size: .9375rem;
+    font-weight: 500;
+    color: var(--fc-text);
+}
+
+.fc-shipping-method__cost {
+    font-size: .9375rem;
+    font-weight: 700;
+    color: var(--fc-brand);
+    flex-shrink: 0;
 }
 
 /* Place order button */

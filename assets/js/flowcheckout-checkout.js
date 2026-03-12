@@ -61,6 +61,14 @@
                 }
             } );
 
+            // Shipping method: update visual selected state when changed
+            this.$body.on( 'change', 'input.shipping_method[type="radio"]', ( e ) => {
+                const $radio    = $( e.target );
+                const $siblings = $radio.closest( '.fc-shipping-methods' ).find( '.fc-shipping-method' );
+                $siblings.removeClass( 'fc-shipping-method--selected' );
+                $radio.closest( '.fc-shipping-method' ).addClass( 'fc-shipping-method--selected' );
+            } );
+
             // Range sliders in admin (they exist on frontend custom CSS preview, ignore if not present)
             $( '.fc-range' ).on( 'input', function () {
                 $( this ).siblings( '.fc-range__value' ).text( $( this ).val() + 'px' );
@@ -115,7 +123,7 @@
             // WooCommerce handles the response via 'applied_coupon' / 'removed_coupon' events
             // We just reset the button state after a delay
             setTimeout( () => {
-                this.$applyBtn.prop( 'disabled', false ).text( 'Apply' );
+                this.$applyBtn.prop( 'disabled', false ).text( data.i18n.apply || 'Apply' );
             }, 1500 );
         },
 
@@ -231,10 +239,15 @@
 
         // ── On checkout updated (WooCommerce AJAX) ────────────────────────────
         onCheckoutUpdated() {
-            // Re-cache dynamic elements
+            // Re-cache dynamic elements (WooCommerce may have replaced DOM nodes)
             this.cacheDom();
             this.initMobileSummaryToggle();
             this.initCouponToggle();
+
+            // Re-apply shipping method selected state
+            $( 'input.shipping_method[type="radio"]:checked' ).each( function () {
+                $( this ).closest( '.fc-shipping-method' ).addClass( 'fc-shipping-method--selected' );
+            } );
         },
     };
 

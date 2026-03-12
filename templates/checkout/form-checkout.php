@@ -18,10 +18,10 @@ $collapsible_mob  = FlowCheckout_Settings::get( 'collapsible_on_mobile', true );
 $show_thumbnails  = FlowCheckout_Settings::get( 'show_product_thumbnails', true );
 $trust_position   = FlowCheckout_Settings::get( 'trust_badges_position', 'below_button' );
 $ec_position      = FlowCheckout_Settings::get( 'express_checkout_position', 'above' );
-
-// Suppress "Proceed to checkout" button that gateways inject via woocommerce_proceed_to_checkout
-// We only want the actual express payment buttons (Apple Pay, Google Pay)
-add_filter( 'woocommerce_order_button_html', '__return_empty_string', 99 );
+$ec_enabled       = FlowCheckout_Settings::get( 'express_checkout_enabled', true );
+$ec_label         = FlowCheckout_Settings::get( 'express_checkout_label', __( 'Express checkout', 'flowcheckout' ) );
+$ec_divider       = FlowCheckout_Settings::get( 'express_checkout_divider', __( 'Or continue below', 'flowcheckout' ) );
+$ec_style         = FlowCheckout_Settings::get( 'express_checkout_style', 'auto' );
 ?>
 <div class="fc-checkout fc-checkout--<?php echo esc_attr( $layout ); ?>">
 
@@ -107,11 +107,6 @@ add_filter( 'woocommerce_order_button_html', '__return_empty_string', 99 );
 
             <?php do_action( 'woocommerce_before_checkout_form', $checkout ); ?>
 
-            <!-- Express checkout (above form) -->
-            <?php if ( in_array( $ec_position, array( 'above', 'both' ), true ) ) : ?>
-                <?php do_action( 'flowcheckout_before_contact_fields' ); ?>
-            <?php endif; ?>
-
             <form name="checkout"
                   id="fc-checkout-form"
                   class="fc-form woocommerce-checkout"
@@ -121,6 +116,8 @@ add_filter( 'woocommerce_order_button_html', '__return_empty_string', 99 );
                   action="<?php echo esc_url( wc_get_checkout_url() ); ?>">
 
                 <?php do_action( 'woocommerce_checkout_before_customer_details' ); ?>
+
+                <?php do_action( 'woocommerce_checkout_before_order_review_heading' ); ?>
 
                 <!-- ── Contact ─────────────────────────────────────────────── -->
                 <div class="fc-form__section" id="fc-section-contact">
@@ -174,6 +171,64 @@ add_filter( 'woocommerce_order_button_html', '__return_empty_string', 99 );
                     <?php endif; ?>
                 </div>
 
+                <!-- ── Shipping method selector ────────────────────────────── -->
+                <?php
+                $shipping_packages    = WC()->shipping()->get_packages();
+                $has_multiple_methods = false;
+                foreach ( $shipping_packages as $pkg ) {
+                    if ( count( $pkg['rates'] ) > 1 ) {
+                        $has_multiple_methods = true;
+                        break;
+                    }
+                }
+                ?>
+                <?php if ( WC()->cart->needs_shipping() && ! empty( $shipping_packages ) ) : ?>
+                    <?php if ( $has_multiple_methods ) : ?>
+                        <div class="fc-form__section" id="fc-section-shipping-methods">
+                            <h2 class="fc-form__section-title"><?php esc_html_e( 'Shipping method', 'flowcheckout' ); ?></h2>
+                            <?php foreach ( $shipping_packages as $package_index => $package ) :
+                                $available_methods = $package['rates'];
+                                if ( empty( $available_methods ) ) continue;
+                                $chosen_method = isset( WC()->session->chosen_shipping_methods[ $package_index ] )
+                                    ? WC()->session->chosen_shipping_methods[ $package_index ]
+                                    : current( array_keys( $available_methods ) );
+                            ?>
+                            <div class="fc-shipping-methods" id="fc-shipping-methods-<?php echo absint( $package_index ); ?>">
+                                <?php foreach ( $available_methods as $method ) :
+                                    $is_selected = ( $method->id === $chosen_method );
+                                    $input_id    = 'shipping_method_' . absint( $package_index ) . '_' . esc_attr( sanitize_title( $method->id ) );
+                                ?>
+                                <label class="fc-shipping-method <?php echo $is_selected ? 'fc-shipping-method--selected' : ''; ?>"
+                                       for="<?php echo esc_attr( $input_id ); ?>">
+                                    <input type="radio"
+                                           id="<?php echo esc_attr( $input_id ); ?>"
+                                           name="shipping_method[<?php echo absint( $package_index ); ?>]"
+                                           data-index="<?php echo absint( $package_index ); ?>"
+                                           value="<?php echo esc_attr( $method->id ); ?>"
+                                           <?php checked( $method->id, $chosen_method ); ?>
+                                           class="shipping_method" />
+                                    <span class="fc-shipping-method__name"><?php echo esc_html( $method->get_label() ); ?></span>
+                                    <span class="fc-shipping-method__cost"><?php echo wc_cart_totals_shipping_method_label( $method ); ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else : ?>
+                        <?php foreach ( $shipping_packages as $package_index => $package ) :
+                            $available_methods = $package['rates'];
+                            if ( empty( $available_methods ) ) continue;
+                            $method_id = current( array_keys( $available_methods ) );
+                        ?>
+                        <input type="hidden"
+                               name="shipping_method[<?php echo absint( $package_index ); ?>]"
+                               value="<?php echo esc_attr( $method_id ); ?>"
+                               class="shipping_method"
+                               data-index="<?php echo absint( $package_index ); ?>" />
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                <?php endif; ?>
+
                 <!-- ── Additional fields ───────────────────────────────────── -->
                 <?php $order_fields = $checkout->get_checkout_fields( 'order' ); ?>
                 <?php if ( ! empty( $order_fields ) ) : ?>
@@ -190,32 +245,25 @@ add_filter( 'woocommerce_order_button_html', '__return_empty_string', 99 );
                 <?php do_action( 'woocommerce_checkout_after_customer_details' ); ?>
 
                 <!-- ── Payment ─────────────────────────────────────────────── -->
-                <?php do_action( 'woocommerce_checkout_before_order_review_heading' ); ?>
                 <div class="fc-form__section fc-form__section--payment" id="fc-section-payment">
                     <h2 class="fc-form__section-title"><?php esc_html_e( 'Payment', 'flowcheckout' ); ?></h2>
 
                     <?php do_action( 'woocommerce_checkout_before_order_review' ); ?>
 
                     <?php
-                    // woocommerce_checkout_payment() outputs:
-                    //   - payment method list
-                    //   - place order button
-                    // We call it ONCE only here.
+                    // Renders payment method list + place order button.
+                    // The place order button (#place_order) MUST be rendered here — do NOT filter
+                    // woocommerce_order_button_html to empty, as that removes the submit button.
                     woocommerce_checkout_payment();
                     ?>
 
                     <?php do_action( 'woocommerce_checkout_after_order_review' ); ?>
 
-                    <!-- Trust badges -->
+                    <!-- Trust badges (below or above button) -->
                     <?php if ( in_array( $trust_position, array( 'below_button', 'above_button' ), true ) ) : ?>
                         <?php do_action( 'flowcheckout_after_place_order_button' ); ?>
                     <?php endif; ?>
                 </div>
-
-                <!-- Express checkout below form -->
-                <?php if ( in_array( $ec_position, array( 'below', 'both' ), true ) ) : ?>
-                    <?php do_action( 'flowcheckout_before_contact_fields' ); ?>
-                <?php endif; ?>
 
             </form>
 
@@ -287,8 +335,8 @@ add_filter( 'woocommerce_order_button_html', '__return_empty_string', 99 );
                     </div>
                 <?php endif; ?>
 
-                <!-- Totals -->
-                <div class="fc-order-summary__totals">
+                <!-- Totals — wrapped in #fc-totals-fragment so WooCommerce AJAX can refresh it -->
+                <div id="fc-totals-fragment" class="fc-order-summary__totals">
                     <div class="fc-total-row">
                         <span><?php esc_html_e( 'Subtotal', 'flowcheckout' ); ?></span>
                         <span><?php wc_cart_totals_subtotal_html(); ?></span>
@@ -328,7 +376,7 @@ add_filter( 'woocommerce_order_button_html', '__return_empty_string', 99 );
                         <span><?php esc_html_e( 'Total', 'flowcheckout' ); ?></span>
                         <span class="fc-grand-total"><?php wc_cart_totals_order_total_html(); ?></span>
                     </div>
-                </div>
+                </div><!-- #fc-totals-fragment -->
 
                 <!-- Sidebar trust badges -->
                 <?php if ( 'sidebar' === $trust_position ) : ?>
