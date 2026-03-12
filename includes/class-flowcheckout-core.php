@@ -22,7 +22,9 @@ class FlowCheckout_Core {
         add_filter( 'body_class',         array( $self, 'add_body_classes' ) );
 
         add_action( 'flowcheckout_after_place_order_button', array( $self, 'render_trust_badges' ) );
-        add_action( 'flowcheckout_before_contact_fields',    array( $self, 'render_express_checkout' ) );
+
+        // Inject the totals fragment so WooCommerce AJAX (update_checkout) refreshes our custom totals.
+        add_filter( 'woocommerce_update_order_review_fragments', array( $self, 'refresh_totals_fragment' ) );
 
         add_action( 'wp_ajax_flowcheckout_refresh_totals',        array( $self, 'ajax_refresh_totals' ) );
         add_action( 'wp_ajax_nopriv_flowcheckout_refresh_totals', array( $self, 'ajax_refresh_totals' ) );
@@ -87,6 +89,7 @@ class FlowCheckout_Core {
                 'invalidEmail'       => __( 'Please enter a valid email address.', 'flowcheckout' ),
                 'showSummary'        => __( 'Show order summary', 'flowcheckout' ),
                 'hideSummary'        => __( 'Hide order summary', 'flowcheckout' ),
+                'apply'              => __( 'Apply', 'flowcheckout' ),
             ),
         ) );
     }
@@ -170,37 +173,66 @@ class FlowCheckout_Core {
         echo '</div>';
     }
 
-    // ── Express Checkout ──────────────────────────────────────────────────────
-    public function render_express_checkout() {
-        if ( ! FlowCheckout_Settings::get( 'express_checkout_enabled', true ) ) return;
+    // ── AJAX: Refresh totals fragment ─────────────────────────────────────────
+    // WooCommerce calls woocommerce_update_order_review_fragments after every
+    // update_checkout AJAX call. We inject #fc-totals-fragment so our custom
+    // order summary (which bypasses WC's default #order_review div) stays in sync
+    // when shipping costs change, coupons are applied, etc.
+    public function refresh_totals_fragment( $fragments ) {
+        if ( ! FlowCheckout_Helpers::is_checkout() || ! FlowCheckout_Helpers::is_active() ) {
+            return $fragments;
+        }
 
-        $position = FlowCheckout_Settings::get( 'express_checkout_position', 'above' );
-        if ( 'none' === $position ) return;
-
-        $label   = FlowCheckout_Settings::get( 'express_checkout_label', 'Express checkout' );
-        $divider = FlowCheckout_Settings::get( 'express_checkout_divider', 'Or continue with' );
-        $style   = FlowCheckout_Settings::get( 'express_checkout_style', 'auto' );
+        ob_start();
         ?>
-        <div class="fc-express-checkout" data-style="<?php echo esc_attr( $style ); ?>">
-            <?php if ( $label ) : ?>
-                <p class="fc-express-checkout__label"><?php echo esc_html( $label ); ?></p>
-            <?php endif; ?>
-            <div class="fc-express-checkout__buttons">
-                <?php
-                do_action( 'woocommerce_proceed_to_checkout' );
-                do_action( 'flowcheckout_express_checkout_buttons' );
-                ?>
+        <div id="fc-totals-fragment" class="fc-order-summary__totals">
+            <div class="fc-total-row">
+                <span><?php esc_html_e( 'Subtotal', 'flowcheckout' ); ?></span>
+                <span><?php wc_cart_totals_subtotal_html(); ?></span>
             </div>
-            <?php if ( $divider ) : ?>
-                <div class="fc-express-checkout__divider">
-                    <span><?php echo esc_html( $divider ); ?></span>
+
+            <?php foreach ( WC()->cart->get_coupons() as $code => $coupon ) : ?>
+                <div class="fc-total-row fc-total-row--discount">
+                    <span><?php echo esc_html( wc_cart_totals_coupon_label( $coupon, false ) ); ?></span>
+                    <span class="fc-total-row__discount"><?php wc_cart_totals_coupon_html( $coupon ); ?></span>
+                </div>
+            <?php endforeach; ?>
+
+            <?php foreach ( WC()->cart->get_fees() as $fee ) : ?>
+                <div class="fc-total-row">
+                    <span><?php echo esc_html( $fee->name ); ?></span>
+                    <span><?php echo wc_price( $fee->total ); ?></span>
+                </div>
+            <?php endforeach; ?>
+
+            <?php if ( WC()->cart->needs_shipping() && WC()->cart->show_shipping() ) : ?>
+                <div class="fc-total-row">
+                    <span><?php esc_html_e( 'Shipping', 'flowcheckout' ); ?></span>
+                    <span><?php wc_cart_totals_shipping_html(); ?></span>
                 </div>
             <?php endif; ?>
+
+            <?php if ( wc_tax_enabled() && ! WC()->cart->display_prices_including_tax() ) : ?>
+                <?php foreach ( WC()->cart->get_tax_totals() as $code => $tax ) : ?>
+                    <div class="fc-total-row">
+                        <span><?php echo esc_html( $tax->label ); ?></span>
+                        <span><?php echo wp_kses_post( $tax->formatted_amount ); ?></span>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+
+            <div class="fc-total-row fc-total-row--grand">
+                <span><?php esc_html_e( 'Total', 'flowcheckout' ); ?></span>
+                <span class="fc-grand-total"><?php wc_cart_totals_order_total_html(); ?></span>
+            </div>
         </div>
         <?php
+        $fragments['#fc-totals-fragment'] = ob_get_clean();
+
+        return $fragments;
     }
 
-    // ── AJAX: Refresh totals ──────────────────────────────────────────────────
+    // ── AJAX: Full order review refresh (legacy / fallback) ───────────────────
     public function ajax_refresh_totals() {
         check_ajax_referer( 'flowcheckout_frontend', 'nonce' );
         ob_start();
