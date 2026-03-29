@@ -2,5 +2,5 @@
 
 ## [Unreleased]
 
-- optimize database query performance
-- Build: 2026-03-27T13:00:00.988Z
+- add setup and installation guide
+- Updated: 2026-03-29T13:00:01.595Z
