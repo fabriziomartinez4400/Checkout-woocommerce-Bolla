@@ -1,6 +1,6 @@
 # Checkout-woocommerce-Bolla
 
-> Last updated: 2026-03-27
+> Last updated: 2026-03-29
 
 ## About
 
