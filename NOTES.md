@@ -1,7 +1,7 @@
 # Notes
 
-Session: 2026-03-27T13:00:00.988Z
+Last updated: 2026-03-29T13:00:01.595Z
 
-## Summary
+## Progress
 
-- add unit tests for core functions
+- resolve memory leak in event listener
